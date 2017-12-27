@@ -27,12 +27,12 @@ apt-get install -y \
 	libssl-dev \
 	libsecret-1-dev \
 	libmariadb-client-lgpl-dev
+	
+# Remove dependencies
+apt-get autoremove -y
 
 # Install the R packages (this will take about half an hour by itself)
-Rscript -e 'install.packages(c("tidyverse", "data.table", "openxlsx", "writexl",
-"RcppRoll", "devtools", "roxygen2", "testthat", "validate"),
-dependencies = TRUE, repos = "https://cran.rstudio.com/")'
-
+Rscript -e 'install.packages(c("tidyverse", "data.table", "openxlsx", "writexl", "RcppRoll", "devtools", "roxygen2", "testthat", "validate"), dependencies = TRUE, repos = "https://cran.rstudio.com/")'
 # Optional: Install .deb package installer, and install RStudio Server
 apt-get install gdebi-core
 wget https://download2.rstudio.org/rstudio-server-1.1.383-amd64.deb
