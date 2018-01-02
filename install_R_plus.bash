@@ -48,7 +48,11 @@ usermod -aG staff ${SUDO_USER}
 # wget https://download2.rstudio.org/rstudio-server-1.1.383-amd64.deb
 # gdebi rstudio-server-1.1.383-amd64.deb
 
+# Remind to reboot, so that group change takes effect
+printf "\nNOTE: please be sure to reboot before installing any new R packages,\n"
+printf "so that staff group addition takes effect!\n\n"
+
 # OPTIONAL:
 # Reboot (if for no other reason than to make sure the group changes
 # take effect immediately
-reboot now
+# reboot now
