@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 # Bash shell script that will install R, RStudio Server, their various
 # development tools, and the main Linux packages that the tidyverse needs
 # to have installed.
@@ -32,15 +32,16 @@ apt-get install -y \
 # (the following  may be commented out as desired)
 # 	libsecret-1-dev \
 # 	libmariadb-client-lgpl-dev
+#   libpg-dev
 
 # Remove dependency-only programs that were just installed
 apt-get autoremove -y
 
 # Install some python modules
-pip install pandas pycrypto requests
+# pip install pandas pycrypto requests
 
 # Install the R packages (this will take about half an hour by itself)
-Rscript -e 'install.packages(c("tidyverse", "data.table", "openxlsx", "writexl", "RcppRoll", "devtools", "roxygen2", "testthat", "validate"), dependencies = TRUE, repos = "https://cran.rstudio.com/")'
+Rscript -e 'install.packages(c("tidyverse", "getPass"), dependencies = TRUE, repos = "https://cran.rstudio.com/")'
 
 # OPTIONAL:
 # Add user who ran this script to "staff" group, so all R library installs
