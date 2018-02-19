@@ -7,7 +7,12 @@
 # First, you have to add the most current CRAN repository to Linux, since
 # the official version via (at least) Ubuntu is out-of-date.
 # (The exact repo may change based on your particular distro, if not Ubuntu)
-echo "deb https://cran.rstudio.com/bin/linux/ubuntu $(lsb_release -cs)/" | tee -a /etc/apt/sources.list
+if grep --quiet cran /etc/apt/sources.list
+then
+  echo "deb https://cran.rstudio.com/bin/linux/ubuntu $(lsb_release -cs)/" | tee -a /etc/apt/sources.list
+else
+  echo "Up-to-date CRAN repo found"
+fi
 
 # Then, if using Ubuntu (and maybe other distros), you need to add the
 # public key of the CRAN repository, so it's trusted by the OS.
