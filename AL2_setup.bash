@@ -7,7 +7,7 @@ rpm -Uvh http://download.fedoraproject.org/pub/epel/7/x86_64/Packages/e/epel-rel
 
 # Install important GNU/Linux packages
 yum check-update
-yum install libcurl-devel openssl-devel libxml2-devel python-devel
+yum install libcurl-devel openssl-devel libssh2-devel libxml2-devel python-devel gcc gcc-c++ automake autoconf
 
 # Install pip, for python modules, then install some modules
 yum install python-pip
