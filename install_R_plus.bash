@@ -76,3 +76,17 @@ printf "so that staff group addition takes effect!\n\n"
 # Reboot (if for no other reason than to make sure the group changes
 # take effect immediately
 # reboot now
+
+
+
+# OTHER
+
+# # Set up Ubutu so cron jobs get logged to a dedicated place
+# sudo nano /etc/rsyslog.d/50-default.conf
+# 
+# # Uncomment the following line (it's near the top):
+# #cron.*                          /var/log/cron.log
+# 
+# # Restart services
+# sudo service rsyslog restart
+# sudo service cron restart
