@@ -1,6 +1,6 @@
 #! /bin/bash
 # Instructions available at: https://docs.docker.com/engine/installation/linux/docker-ce/ubuntu/#install-docker-ce
-apt-get install \
+apt-get install -y \
 	apt-transport-https \
 	ca-certificates \
 	curl \
@@ -15,6 +15,6 @@ add-apt-repository \
 
 apt-get update
 
-apt-get install docker-ce
+apt-get install -y docker-ce
 
-# usermod -aG docker ${SUDO_USER}
+usermod -aG docker ${SUDO_USER}
