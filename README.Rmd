@@ -1,0 +1,12 @@
+---
+title: "Install R via Shell"
+author: "Ryan Price"
+date: "`r Sys.Date()`"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
