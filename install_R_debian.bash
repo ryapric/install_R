@@ -45,6 +45,7 @@ fi
 # Prompt to install base R
 printf "\nWould you like to install base R? (y/n) "
 read install_base_r
+
 if [ "$install_base_r" == "y" ]; then
     apt-get install -y \
         ed \
@@ -53,8 +54,7 @@ if [ "$install_base_r" == "y" ]; then
         vim-tiny \
         wget \
         ca-certificates \
-        fonts-texgyre
-        apt-get update \
+        fonts-texgyre \
         littler \
         r-cran-littler \
         r-base \
@@ -116,16 +116,7 @@ if [ "$install_tidyverse" == "y" ]; then
         libpq-dev \
         libssh2-1-dev \
         unixodbc-dev
-    Rscript -e "source('https://bioconductor.org/biocLite.R')"
-    install2.r --error --deps TRUE \
-        tidyverse \
-        dplyr \
-        ggplot2 \
-        devtools \
-        formatR \
-        remotes \
-        selectr \
-        caTools
+    Rscript -e 'install.packages(c("tidyverse", "devtools", "formatR", "remotes", "selectr", "caTools", "RSQLite", "RMySQL", "RMariaDB", "RPostgreSQL"), dependencies = TRUE, repos = "https://cran.rstudio.com")'
 else
     printf "Skipping tidyverse installation.\n"
 fi
@@ -138,7 +129,7 @@ if [ "$install_rstudio" == "y" ]; then
     apt-get install -y gdebi-core
     debfile="rstudio-$(lsb_release -cs)-1.1.442-amd64.deb"
     wget https://download1.rstudio.org/$debfile
-    gdebi $debfile
+    gdebi --n $debfile
     rm $debfile
 else
     printf "Skipping RStudio installation.\n"
