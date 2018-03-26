@@ -112,6 +112,7 @@ if [ "$install_tidyverse" == "y" ]; then
     fi
     apt-get install -y \
         libxml2-dev \
+        libcurl4-openssl-dev \
         libcairo2-dev \
         libsqlite-dev \
         libmariadbd-dev \
