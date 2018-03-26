@@ -94,17 +94,18 @@ if [ "$install_tidyverse" == "y" ]; then
     if [ "$sysmem" -le "1" ]; then
         printf "\nWARNING: Available system memory (~$sysmem GB) is likely too low\n"
         printf "to compile packages for the tidyverse (i.e., install them on your system).\n"
-        printf "Would you like to create a local swapfile (~/swap2) to allow for successful compilation? (y/n) "
+        printf "Would you like to create a temporary swapfile (/swap2) to allow for successful compilation?\n"
+        printf "(please note that choosing 'y' will NOT restore any original swap partition after intstall, but WILL remove swapfile) (y/n) "
         read make_swap
         if [ "$make_swap" == "y" ]; then
             printf "\n How large of a swapfile would you like?\n"
             printf "Please enter as an integer, in GB (at least 1 recommended) : "
             read $swap_size
             swapoff -a
-            fallocate -l ${swap_size}g ~/swap2
-            chmod 600 ~/swap2
-            mkswap ~/swap2
-            swapon ~/swap2
+            fallocate -l ${swap_size}g /swap2
+            chmod 600 /swap2
+            mkswap /swap2
+            swapon /swap2
         elif [ "$make_swap" == "n" ]; then
             printf "Not risking crashing your system. Skipping tidyverse installation, and stopping here."
             exit 0
@@ -121,6 +122,10 @@ if [ "$install_tidyverse" == "y" ]; then
         libssh2-1-dev \
         unixodbc-dev
     Rscript -e 'install.packages(c("tidyverse", "devtools", "formatR", "remotes", "selectr", "caTools", "RSQLite", "RMySQL", "RMariaDB", "RPostgreSQL"), dependencies = TRUE, repos = "https://cran.rstudio.com")'
+    if [ "$make_swap" == "y" ]; then
+        swapoff /swap2
+        rm /swap2
+    fi
 else
     printf "Skipping tidyverse installation.\n"
 fi
