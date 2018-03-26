@@ -92,14 +92,17 @@ if [ "$install_tidyverse" == "y" ]; then
     sysmem="$(cat /proc/meminfo | grep MemTotal | awk '{ print $2 }')"
     sysmem="$((sysmem / 1000000))"
     if [ "$sysmem" -le "1" ]; then
-        printf "WARNING: Available system memory (~$sysmem GB) is likely too low\n"
+        printf "\nWARNING: Available system memory (~$sysmem GB) is likely too low\n"
         printf "to compile packages for the tidyverse (i.e., install them on your system).\n"
         printf "Would you like to create a local swapfile (~/swap2) to allow for successful compilation? (y/n) "
         read make_swap
         if [ "$make_swap" == "y" ]; then
+            printf "\n How large of a swapfile would you like?\n"
+            printf "Please enter as an integer, in GB (at least 1 recommended) : "
+            read $swap_size
             swapoff -a
-            fallocate -l 1g ~/swap2
-            chmod ~/swap2 600
+            fallocate -l ${swap_size}g ~/swap2
+            chmod 600 ~/swap2
             mkswap ~/swap2
             swapon ~/swap2
         elif [ "$make_swap" == "n" ]; then
