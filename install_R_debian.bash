@@ -107,7 +107,8 @@ if [ "$install_tidyverse" == "y" ]; then
             mkswap /swap2
             swapon /swap2
         elif [ "$make_swap" == "n" ]; then
-            printf "Not risking crashing your system. Skipping tidyverse installation, and stopping here."
+            printf "Not risking crashing your system. Skipping tidyverse installation, and stopping here.\n"
+            printf "If you want to continue, re-run this script, and select 'no' when prompted for tidyverse installation.\n"
             exit 0
         fi
     fi
