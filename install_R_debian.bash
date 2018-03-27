@@ -100,7 +100,7 @@ if [ "$install_tidyverse" == "y" ]; then
         if [ "$make_swap" == "y" ]; then
             printf "\n How large of a swapfile would you like?\n"
             printf "Please enter as an integer, in GB (at least 1 recommended) : "
-            read $swap_size
+            read swap_size
             swapoff -a
             fallocate -l ${swap_size}g /swap2
             chmod 600 /swap2
