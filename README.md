@@ -3,14 +3,14 @@ Install R via Interactive Bash Script
 Ryan Price
 2018-03-31
 
-This repo provides a bash script, `install_R.bash`, that installs the R software
-on various popular GNU/Linux distributions: Debian, Ubuntu, RHEL, CentOS,
-Fedora, and Amazon Linux. Once run, the script becomes interactive, prompting
-the user for input on how they would like their installation configured. This
-program is designed to make the fresh R configration of a new system or virtual
-machine as painless as possible. To that end, simply following the prompts
-should be all a user has to do to get up and running with R with a few
-keystrokes.
+This repository provides a bash script, `install_R.bash`, that installs the R
+software on various popular GNU/Linux distributions: Debian, Ubuntu, Fedora,
+RHEL, CentOS, and Amazon Linux. Once run, the script becomes interactive,
+prompting the user for input on how they would like their installation
+configured. This program is designed to make the fresh R configuration of a new
+system or virtual machine as painless as possible. To that end, simply following
+the prompts should be all a user has to do to get up and running with R with a
+few keystrokes.
 
 Currently, the script leads the user through the following main prompts:
 
@@ -24,7 +24,7 @@ package for very fast data analysis & transformation that has zero non-core-R
 dependencies.
 
 1. Installation of the [RStudio desktop IDE](rstudio.com). Even if you don't
-care for the tidyverse, which is developed by the people at RStudio, this IDe is
+care for the tidyverse, which is developed by the people at RStudio, this IDE is
 very high-quality, and supports syntax highlighting and shell execution of other
 software, as well. Highly recommended.
 
