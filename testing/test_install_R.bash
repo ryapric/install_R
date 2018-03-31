@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-distro="fedora"
+distro="centos"
 
-docker build -f ./testing/Dockerfile -t test_install_r_${distro} .
+docker build --no-cache -f ./testing/Dockerfile -t test_install_r_${distro} .
 
 docker run -dit --name=test_${distro} test_install_r_${distro}
 

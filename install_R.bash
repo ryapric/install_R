@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Bash shell script that will prompt the user to install R, R dev tools, the
 # tidyverse of packages and data.table, and RStudio Desktop (in that order). The GNU/Linux
@@ -55,23 +55,21 @@ case "$distro" in
             apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 'E084DAB9'
         fi
         $pkg_update
-        ;;
+    ;;
     "fedora" )
         pkg_update="dnf check-update"
         pkg_install="dnf install -y"
-        # printf "Sorry; Fedora install is still in the works\n"
-        # exit 0
-        ;;
+        # Running RPM-based update returns exit code 100 if any updates available!
+        # $pkg_update
+    ;;
     "centos"|"rhel"|"amzn" )
         # Add EPEL (EL7) repo list
         # If this fails, check the link to see if the epel-release version changed
         rpm -Uvh "http://download.fedoraproject.org/pub/epel/7/x86_64/Packages/e/epel-release-7-11.noarch.rpm"
         pkg_update="yum check-update"
         pkg_install="yum install -y"
-        $pkg_update
-        # printf "Sorry; CentOS/RHEL/Amazon Linux install is still in the works\n"
-        # exit 
-        ;;
+        # $pkg_update
+    ;;
     * )
         printf "Sorry, your GNU/Linux distribution ($distro) is not supported."
         exit 1
@@ -80,12 +78,12 @@ esac
 
 # Add appropriate CRAN repo to sources list, if applicable
 if [ "$distro" == "debian" ] || [ "$distro" == "ubuntu" ]; then
-    
+
     printf "\nTo get the latest version of R, you must update your package repo.\n"
     printf "Otherwise, you can only use whatever the latest R version is available for this distribution ($(lsb_release -ds)).\n"
     printf "Would you like to add the official CRAN repo to your sources list? (y/n) "
     read addrepo
-    
+
     if [ "$addrepo" == "y" ]; then
         if grep --quiet "cran" "$sources_list"; then
             printf "Up-to-date CRAN repo already found.\n"
@@ -96,6 +94,7 @@ if [ "$distro" == "debian" ] || [ "$distro" == "ubuntu" ]; then
     else
         printf "Not adding CRAN repo; using defaults.\n"
     fi
+
 fi
 
 
@@ -120,15 +119,14 @@ if [ "$install_base_r" == "y" ]; then
                 r-base \
                 r-base-dev \
                 r-recommended
-            ;;
+        ;;
         "fedora" )
-            $pkg_update
             $pkg_install \
                 R
-            ;;
+        ;;
         "centos"|"rhel"|"amzn" )
-            $pkg_install R
-            printf "Uhhh... soon."
+            $pkg_install \
+                R
     esac
 else
     printf "Well then... why did you run this script?\n"
@@ -184,27 +182,34 @@ if [ "$install_tidyverse" == "y" ]; then
             exit 0
         fi
     fi
-    apt-get install -y \
-        libxml2-dev \
-        libcurl4-openssl-dev \
-        libcairo2-dev \
-        libsqlite-dev \
-        libmariadbd-dev \
-        libmariadb-client-lgpl-dev \
-        libpq-dev \
-        libssh2-1-dev \
-        unixodbc-dev
-    # # Fedora/RHEL/CentOS
-    # $pkg_install -y \
-    #     libcurl-devel \
-    #     openssl-devel \
-    #     libssh2-devel \
-    #     libxml2-devel \
-    #     python-devel \
-    #     gcc \
-    #     gcc-c++ \
-    #     automake \
-    #     autoconf
+    case "$distro" in
+        "debian"|"ubuntu" )
+            $pkg_install \
+                libxml2-dev \
+                libcurl4-openssl-dev \
+                libcairo2-dev \
+                libsqlite-dev \
+                libmariadbd-dev \
+                libmariadb-client-lgpl-dev \
+                libpq-dev \
+                libssh2-1-dev \
+                unixodbc-dev
+        ;;
+        "fedora"|"centos"|"rhel"|"amzn" )
+            $pkg_install \
+                libcurl-devel \
+                openssl-devel \
+                libxml2-devel \
+                mariadb-connector-c-devel \
+                mariadb-devel \
+                mysql-devel \
+                libpqxx-devel \
+                libssh2-devel \
+                gcc \
+                gcc-c++ \
+                automake \
+                autoconf
+    esac
     Rscript -e "
         install.packages(c('tidyverse', \
             'devtools', \
@@ -239,5 +244,5 @@ else
     printf "Skipping RStudio installation.\n"
 fi
 
-printf "You're all set! Enjoy R!\n"
+printf "\nYou're all set! Enjoy R!\n"
 exit 0
