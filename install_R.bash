@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
 
-# Bash shell script that will prompt the user to install R, R dev tools, the
-# tidyverse of packages and data.table, and RStudio Desktop (in that order). The GNU/Linux
-# utilities installed will correspond with the R configuration desired, and are
-# organized based on how the docker images by Dirk Eddelbuettel are set up, for
-# reliability and maximum reproducibility: https://github.com/rocker-org/rocker
-
 # Exit on any error, or undeclared variable
 set -eu
 
@@ -35,7 +29,7 @@ fi
 cran_repo_toplevel="https://cran.rstudio.com/bin/linux"
 
 # Get distro name, keep only the actual name, and set to all lowercase
-distro="$(cat /etc/*-release | grep '^ID=' | sed 's/ID=//g' | sed 's/\"//g')"
+distro="$(cat /etc/*-release | grep '^ID=' | sed 's/ID=//g; s/\"//g')"
 distro="${distro,,}"
 
 # Big Ol' Case Block
@@ -55,13 +49,13 @@ case "$distro" in
             apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 'E084DAB9'
         fi
         $pkg_update
-    ;;
+        ;;
     "fedora" )
         pkg_update="dnf check-update"
         pkg_install="dnf install -y"
         # Running RPM-based update returns exit code 100 if any updates available!
         # $pkg_update
-    ;;
+        ;;
     "centos"|"rhel"|"amzn" )
         # Add EPEL (EL7) repo list
         # If this fails, check the link to see if the epel-release version changed
@@ -69,9 +63,9 @@ case "$distro" in
         pkg_update="yum check-update"
         pkg_install="yum install -y"
         # $pkg_update
-    ;;
+        ;;
     * )
-        printf "Sorry, your GNU/Linux distribution ($distro) is not supported."
+        printf "Sorry, your GNU/Linux distribution ($distro) is not supported.\n"
         exit 1
 esac
 
@@ -119,11 +113,11 @@ if [ "$install_base_r" == "y" ]; then
                 r-base \
                 r-base-dev \
                 r-recommended
-        ;;
+                ;;
         "fedora" )
             $pkg_install \
-                R
-        ;;
+                R \
+                ;;
         "centos"|"rhel"|"amzn" )
             $pkg_install \
                 R
@@ -171,11 +165,12 @@ if [ "$install_tidyverse" == "y" ]; then
             printf "\n How large of a swapfile would you like?\n"
             printf "Please enter as an integer, in GB (at least 1 recommended) : "
             read swap_size
+            swapfile="/mnt/${swap_size}g.swap"
             swapoff -a
-            fallocate -l ${swap_size}g /swap2
-            chmod 600 /swap2
-            mkswap /swap2
-            swapon /swap2
+            fallocate -l ${swap_size}g "$swapfile"
+            chmod 600 "$swapfile"
+            mkswap "$swapfile"
+            swapon "$swapfile"
         elif [ "$make_swap" == "n" ]; then
             printf "Not risking crashing your system. Skipping tidyverse installation, and stopping here.\n"
             printf "If you want to continue, re-run this script, and select 'no' when prompted for tidyverse installation.\n"
@@ -212,6 +207,7 @@ if [ "$install_tidyverse" == "y" ]; then
     esac
     Rscript -e "
         install.packages(c('tidyverse', \
+            'data.table', \
             'devtools', \
             'formatR', \
             'remotes', \
@@ -222,9 +218,9 @@ if [ "$install_tidyverse" == "y" ]; then
             'RMariaDB', \
             'RPostgreSQL'), \
             dependencies = TRUE, repos = 'https://cran.rstudio.com')"
-    if [ "$make_swap" == "y" ]; then
-        swapoff /swap2
-        rm /swap2
+    if [ -n "$make_swap" ] && [ "$make_swap" == "y" ]; then
+        swapoff "$swapfile"
+        rm "$swapfile"
     fi
 else
     printf "Skipping tidyverse installation.\n"
@@ -235,11 +231,24 @@ printf "\nWould you like to install RStudio Desktop, which is an IDE for R? (y/n
 read install_rstudio
 
 if [ "$install_rstudio" == "y" ]; then
-    apt-get install -y gdebi-core
-    debfile="rstudio-$(lsb_release -cs)-1.1.442-amd64.deb"
-    wget https://download1.rstudio.org/$debfile
-    gdebi --n $debfile
-    rm $debfile
+    rstudio_dl="https://download1.rstudio.org/rstudio-"
+    case "$distro" in
+        "debian"|"ubuntu" )
+            $pkg_install gdebi-core wget
+            rstudio_file="xenial-1.1.442-amd64.deb"
+            wget "${rstudio_dl}${rstudio_file}"
+            gdebi --n "$rstudio_file"
+            rm "$rstudio_file"
+            ;;
+        "fedora"|"rhel"|"centos"|"amzn" )
+            $pkg_install wget
+            file="1.1.442-x86_64.rpm"
+            wget "${rstudio_dl}${rstudio_file}"
+            rpm -ivh "$rstudio_file"
+            rm "$rstudio_file"
+            ;;
+        * )
+            printf "Sorry, your distro does not support RStudio.\n"
 else
     printf "Skipping RStudio installation.\n"
 fi

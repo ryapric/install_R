@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-distro="centos"
+distro="amzn"
 
 docker build --no-cache -f ./testing/Dockerfile -t test_install_r_${distro} .
 

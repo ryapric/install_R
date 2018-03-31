@@ -1,4 +1,4 @@
-FROM centos:latest
+FROM amazonlinux:latest
 
 COPY install_R.bash /root/
 
