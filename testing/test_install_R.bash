@@ -1,12 +1,12 @@
 #!/bin/bash
 
-distro="debian"
+distro="fedora"
 
-docker build -f ./testing/deb/Dockerfile_${distro} -t test_install_r_${distro} .
+docker build -f ./testing/Dockerfile -t test_install_r_${distro} .
 
 docker run -dit --name=test_${distro} test_install_r_${distro}
 
-docker exec -ti test_${distro} bash -c "/root/install_R_deb.bash"
+docker exec -ti test_${distro} bash -c "/root/install_R.bash"
 
 printf "\nWould you like to leave the container running to inspect the results? (y/n) "
 read rm_container

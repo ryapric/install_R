@@ -1,12 +1,14 @@
 #!/bin/bash
 
 # Bash shell script that will prompt the user to install R, R dev tools, the
-# tidyverse of packages, and RStudio Desktop (in that order). The GNU/Linux
+# tidyverse of packages and data.table, and RStudio Desktop (in that order). The GNU/Linux
 # utilities installed will correspond with the R configuration desired, and are
 # organized based on how the docker images by Dirk Eddelbuettel are set up, for
 # reliability and maximum reproducibility: https://github.com/rocker-org/rocker
 
+# Exit on any error, or undeclared variable
 set -eu
+
 
 # User must run with elevated privileges
 if [ "$EUID" -ne "0" ]; then
@@ -14,77 +16,120 @@ if [ "$EUID" -ne "0" ]; then
     exit 1
 fi
 
-# If not explicitly made exectuable, stop if bash isn't installed
-if [ -z $(which bash) ]; then
+
+# If not explicitly made exectuable, stop if bash isn't installed (try common places)
+# bash_installed="$(find /bin -name bash)"
+# if [ -z "$bash_installed" ]; then bash_installed="$(find /usr/bin -name bash)"; fi
+bash_installed="ls /bin | grep '^bash$'"
+if [ -z "$bash_installed" ]; then bash_installed="ls /usr/bin | grep '^bash$'"; fi
+
+if [ -z "$bash_installed" ]; then
     printf "To be safe, this script must be run using bash, and not another shell. Aborting.\n" >&2
     exit 1
 fi
 
-# Distribution-specific settings
 
-# Get distro name (and set to all lowercase)
-apt-get update && apt-get install lsb-release -y
-distro="$(lsb_release -is)"
-distro="${distro,,}"
+# Distribution-specific settings ----
 
 # Need the repo assigned early so distro-specific assignments pass
 cran_repo_toplevel="https://cran.rstudio.com/bin/linux"
 
+# Get distro name, keep only the actual name, and set to all lowercase
+distro="$(cat /etc/*-release | grep '^ID=' | sed 's/ID=//g' | sed 's/\"//g')"
+distro="${distro,,}"
+
 # Big Ol' Case Block
 case "$distro" in
-    "debian" ) pkg_cmd="apt-get"
-               distro_repo="deb $cran_repo_toplevel/$distro $(lsb_release -cs)-cran34/"
-               sources_list="/etc/apt/sources.list"
-               $pkg_cmd install gnupg2 -y
-               apt-key adv --keyserver keys.gnupg.net --recv-key 'E19F5F87128899B192B1A2C2AD5F960A256A04AF'
-               $pkg_cmd install apt-transport-https -y
-               $pkg_cmd update ;;
-    "ubuntu" ) pkg_cmd="apt-get"
-               distro_repo="deb $cran_repo_toplevel/$distro $(lsb_release -cs)/"
-               sources_list="/etc/apt/sources.list"
-               apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 'E084DAB9'
-               $pkg_cmd install apt-transport-https -y
-               $pkg_cmd update ;;
-    "fedora" ) printf "I'll add Fedora stuff later\n" ;;
-    "centos" ) printf "I'll add CentOS stuff later\n"
+    "debian"|"ubuntu" )
+        pkg_update="apt-get update"
+        pkg_install="apt-get install -y"
+        sources_list="/etc/apt/sources.list"
+        $pkg_update
+        $pkg_install apt-transport-https lsb-release
+        if [ "$distro" == "debian" ]; then
+            distro_repo="deb $cran_repo_toplevel/$distro $(lsb_release -cs)-cran34/"
+            $pkg_install gnupg2
+            apt-key adv --keyserver keys.gnupg.net --recv-key 'E19F5F87128899B192B1A2C2AD5F960A256A04AF'
+        else
+            distro_repo="deb $cran_repo_toplevel/$distro $(lsb_release -cs)/"
+            apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 'E084DAB9'
+        fi
+        $pkg_update
+        ;;
+    "fedora" )
+        pkg_update="dnf check-update"
+        pkg_install="dnf install -y"
+        # printf "Sorry; Fedora install is still in the works\n"
+        # exit 0
+        ;;
+    "centos"|"rhel"|"amzn" )
+        # Add EPEL (EL7) repo list
+        # If this fails, check the link to see if the epel-release version changed
+        rpm -Uvh "http://download.fedoraproject.org/pub/epel/7/x86_64/Packages/e/epel-release-7-11.noarch.rpm"
+        pkg_update="yum check-update"
+        pkg_install="yum install -y"
+        $pkg_update
+        # printf "Sorry; CentOS/RHEL/Amazon Linux install is still in the works\n"
+        # exit 
+        ;;
+    * )
+        printf "Sorry, your GNU/Linux distribution ($distro) is not supported."
+        exit 1
 esac
 
-# Add appropriate CRAN repo to sources list, if applicable
-printf "\nTo get the latest version of R, you must update your package repo.\n"
-printf "Otherwise, you can only use whatever the latest R version is available for this distribution ($(lsb_release -ds)).\n"
-printf "Would you like to add the official CRAN repo to your sources list? (y/n) "
-read addrepo
 
-if [ "$addrepo" == "y" ]; then
-    if grep --quiet "cran" "$sources_list"; then
-        printf "Up-to-date CRAN repo already found.\n"
+# Add appropriate CRAN repo to sources list, if applicable
+if [ "$distro" == "debian" ] || [ "$distro" == "ubuntu" ]; then
+    
+    printf "\nTo get the latest version of R, you must update your package repo.\n"
+    printf "Otherwise, you can only use whatever the latest R version is available for this distribution ($(lsb_release -ds)).\n"
+    printf "Would you like to add the official CRAN repo to your sources list? (y/n) "
+    read addrepo
+    
+    if [ "$addrepo" == "y" ]; then
+        if grep --quiet "cran" "$sources_list"; then
+            printf "Up-to-date CRAN repo already found.\n"
+        else
+            printf "No CRAN repo found: appending to /etc/sources.list and updating\n"
+            echo "$distro_repo" | tee -a "$sources_list"
+        fi
     else
-        printf "No CRAN repo found: appending to /etc/sources.list and updating\n"
-        echo "$distro_repo" | tee -a "$sources_list"
+        printf "Not adding CRAN repo; using defaults.\n"
     fi
-else
-    printf "Not adding CRAN repo; using defaults.\n"
 fi
+
 
 # Prompt to install base R
 printf "\nWould you like to install base R? (y/n) "
 read install_base_r
 
 if [ "$install_base_r" == "y" ]; then
-    $pkg_cmd update
-    $pkg_cmd install -y \
-        ed \
-        less \
-        locales \
-        vim-tiny \
-        wget \
-        ca-certificates \
-        fonts-texgyre \
-        littler \
-        r-cran-littler \
-        r-base \
-        r-base-dev \
-        r-recommended
+    case "$distro" in
+        "debian"|"ubuntu" )
+            $pkg_update
+            $pkg_install \
+                ed \
+                less \
+                locales \
+                vim-tiny \
+                wget \
+                ca-certificates \
+                fonts-texgyre \
+                littler \
+                r-cran-littler \
+                r-base \
+                r-base-dev \
+                r-recommended
+            ;;
+        "fedora" )
+            $pkg_update
+            $pkg_install \
+                R
+            ;;
+        "centos"|"rhel"|"amzn" )
+            $pkg_install R
+            printf "Uhhh... soon."
+    esac
 else
     printf "Well then... why did you run this script?\n"
     exit 0
@@ -149,7 +194,29 @@ if [ "$install_tidyverse" == "y" ]; then
         libpq-dev \
         libssh2-1-dev \
         unixodbc-dev
-    Rscript -e 'install.packages(c("tidyverse", "devtools", "formatR", "remotes", "selectr", "caTools", "RSQLite", "RMySQL", "RMariaDB", "RPostgreSQL"), dependencies = TRUE, repos = "https://cran.rstudio.com")'
+    # # Fedora/RHEL/CentOS
+    # $pkg_install -y \
+    #     libcurl-devel \
+    #     openssl-devel \
+    #     libssh2-devel \
+    #     libxml2-devel \
+    #     python-devel \
+    #     gcc \
+    #     gcc-c++ \
+    #     automake \
+    #     autoconf
+    Rscript -e "
+        install.packages(c('tidyverse', \
+            'devtools', \
+            'formatR', \
+            'remotes', \
+            'selectr', \
+            'caTools', \
+            'RSQLite', \
+            'RMySQL', \
+            'RMariaDB', \
+            'RPostgreSQL'), \
+            dependencies = TRUE, repos = 'https://cran.rstudio.com')"
     if [ "$make_swap" == "y" ]; then
         swapoff /swap2
         rm /swap2
