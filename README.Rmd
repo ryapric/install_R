@@ -9,4 +9,4 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-
+Everything is written in bash, so need that installed

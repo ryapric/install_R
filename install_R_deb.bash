@@ -6,37 +6,61 @@
 # organized based on how the docker images by Dirk Eddelbuettel are set up, for
 # reliability and maximum reproducibility: https://github.com/rocker-org/rocker
 
+set -eu
+
 # User must run with elevated privileges
 if [ "$EUID" -ne "0" ]; then
     printf "This script must be run with higher privileges. Aborting.\n" >&2
     exit 1
 fi
 
+# If not explicitly made exectuable, stop if bash isn't installed
+if [ -z $(which bash) ]; then
+    printf "To be safe, this script must be run using bash, and not another shell. Aborting.\n" >&2
+    exit 1
+fi
+
+# Distribution-specific settings
+
 # Get distro name (and set to all lowercase)
 apt-get update && apt-get install lsb-release -y
 distro="$(lsb_release -is)"
 distro="${distro,,}"
 
-# Add appropriate CRAN repo to sources.list, and get GPG key to sign it, if Ubuntu
-# Read more: https://cran.r-project.org/bin/linux/ubuntu/README
-# Adding the repo requires apt-transport-https, so will install if agreed
-printf "\nI would like to update your package repo so that you can get the latest version of R.\n"
+# Need the repo assigned early so distro-specific assignments pass
+cran_repo_toplevel="https://cran.rstudio.com/bin/linux"
+
+# Big Ol' Case Block
+case "$distro" in
+    "debian" ) pkg_cmd="apt-get"
+               distro_repo="deb $cran_repo_toplevel/$distro $(lsb_release -cs)-cran34/"
+               sources_list="/etc/apt/sources.list"
+               $pkg_cmd install gnupg2 -y
+               apt-key adv --keyserver keys.gnupg.net --recv-key 'E19F5F87128899B192B1A2C2AD5F960A256A04AF'
+               $pkg_cmd install apt-transport-https -y
+               $pkg_cmd update ;;
+    "ubuntu" ) pkg_cmd="apt-get"
+               distro_repo="deb $cran_repo_toplevel/$distro $(lsb_release -cs)/"
+               sources_list="/etc/apt/sources.list"
+               apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 'E084DAB9'
+               $pkg_cmd install apt-transport-https -y
+               $pkg_cmd update ;;
+    "fedora" ) printf "I'll add Fedora stuff later\n" ;;
+    "centos" ) printf "I'll add CentOS stuff later\n"
+esac
+
+# Add appropriate CRAN repo to sources list, if applicable
+printf "\nTo get the latest version of R, you must update your package repo.\n"
 printf "Otherwise, you can only use whatever the latest R version is available for this distribution ($(lsb_release -ds)).\n"
 printf "Would you like to add the official CRAN repo to your sources list? (y/n) "
 read addrepo
 
 if [ "$addrepo" == "y" ]; then
-    if grep --quiet "cran" /etc/apt/sources.list; then
+    if grep --quiet "cran" "$sources_list"; then
         printf "Up-to-date CRAN repo already found.\n"
     else
         printf "No CRAN repo found: appending to /etc/sources.list and updating\n"
-        cran_repo_toplevel="https://cran.rstudio.com/bin/linux"
-        echo "deb $cran_repo_toplevel/$distro $(lsb_release -cs)/" | tee -a /etc/apt/sources.list
-        if [ "$distro" == "ubuntu" ]; then
-            apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9
-        fi
-        apt-get install apt-transport-https -y
-        apt-get update
+        echo "$distro_repo" | tee -a "$sources_list"
     fi
 else
     printf "Not adding CRAN repo; using defaults.\n"
@@ -47,7 +71,8 @@ printf "\nWould you like to install base R? (y/n) "
 read install_base_r
 
 if [ "$install_base_r" == "y" ]; then
-    apt-get install -y \
+    $pkg_cmd update
+    $pkg_cmd install -y \
         ed \
         less \
         locales \
@@ -65,18 +90,20 @@ else
     exit 0
 fi
 
-# Ask to add to staff group, so all packages install in the same location as for the root user
-printf "\nWould you like to be added to the 'staff' group?\n"
-printf "This allows for all R packages to be installed to the same location,\n"
-printf "i.e. accessible to all users on this machine without needing to reinstall.\n"
-printf "Add to staff group? (y/n) "
-read addto_staff 
-
-if [ "$addto_staff" = "y" ]; then
-    usermod -aG staff "$SUDO_USER"
-    printf "Done. You must log out, then back in for changes to take effect.\n"
-else
-    printf "Not adding sudo user to staff group.\n"
+if [ "$distro" == "ubuntu" ]; then
+    # Ask to add to staff group, so all packages install in the same location as for the root user
+    printf "\nWould you like to be added to the 'staff' group?\n"
+    printf "This allows for all R packages to be installed to the same location,\n"
+    printf "i.e. accessible to all users on this machine without needing to reinstall.\n"
+    printf "Add to staff group? (y/n) "
+    read addto_staff
+    
+    if [ "$addto_staff" = "y" ]; then
+        usermod -aG staff "$SUDO_USER"
+        printf "Done. You must log out, then back in for changes to take effect.\n"
+    else
+        printf "Not adding sudo user to staff group.\n"
+    fi
 fi
 
 # Prompt to install the tidyverse
