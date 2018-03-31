@@ -8,11 +8,11 @@
 
 # User must run with elevated privileges
 if [ "$EUID" -ne "0" ]; then
-    printf "This script must be run with higher privileges. Aborting.\n"
+    printf "This script must be run with higher privileges. Aborting.\n" >&2
     exit 1
 fi
 
-# Get distro name
+# Get distro name (and set to all lowercase)
 apt-get update && apt-get install lsb-release -y
 distro="$(lsb_release -is)"
 distro="${distro,,}"
@@ -146,3 +146,4 @@ else
 fi
 
 printf "You're all set! Enjoy R!\n"
+exit 0
