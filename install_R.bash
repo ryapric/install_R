@@ -12,8 +12,6 @@ fi
 
 
 # If not explicitly made exectuable, stop if bash isn't installed (try common places)
-# bash_installed="$(find /bin -name bash)"
-# if [ -z "$bash_installed" ]; then bash_installed="$(find /usr/bin -name bash)"; fi
 bash_installed="ls /bin | grep '^bash$'"
 if [ -z "$bash_installed" ]; then bash_installed="ls /usr/bin | grep '^bash$'"; fi
 
@@ -101,13 +99,12 @@ if [ "$install_base_r" == "y" ]; then
         "debian"|"ubuntu" )
             $pkg_update
             $pkg_install \
+                # Based on Dirk Eddelbuettel's docker container config
                 ed \
                 less \
                 locales \
-                vim-tiny \
                 wget \
                 ca-certificates \
-                fonts-texgyre \
                 littler \
                 r-cran-littler \
                 r-base \
