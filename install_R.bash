@@ -32,7 +32,7 @@ distro="${distro,,}"
 
 # Big Ol' Case Block
 case "$distro" in
-    "debian"|"ubuntu" )
+    "debian"|"ubuntu"|"raspbian" )
         pkg_update="apt-get update"
         pkg_install="apt-get install -y"
         sources_list="/etc/apt/sources.list"
@@ -63,31 +63,31 @@ case "$distro" in
         # $pkg_update
         ;;
     * )
-        printf "Sorry, your GNU/Linux distribution ($distro) is not supported.\n"
+        printf "Sorry, your GNU/Linux distribution ($distro) is not supported right now.\n"
         exit 1
 esac
 
 
 # Add appropriate CRAN repo to sources list, if applicable
-if [ "$distro" == "debian" ] || [ "$distro" == "ubuntu" ]; then
-
-    printf "\nTo get the latest version of R, you must update your package repo.\n"
-    printf "Otherwise, you can only use whatever the latest R version is available for this distribution ($(lsb_release -ds)).\n"
-    printf "Would you like to add the official CRAN repo to your sources list? (y/n) "
-    read addrepo
-
-    if [ "$addrepo" == "y" ]; then
-        if grep --quiet "cran" "$sources_list"; then
-            printf "Up-to-date CRAN repo already found.\n"
+case "$distro" in
+    "debian"|"ubuntu" )
+        printf "\nTo get the latest version of R, you must update your package repo.\n"
+        printf "Otherwise, you can only use whatever the latest R version is available for this distribution ($(lsb_release -ds)).\n"
+        printf "Would you like to add the official CRAN repo to your sources list? (y/n) "
+        read addrepo
+    
+        if [ "$addrepo" == "y" ]; then
+            if grep --quiet "cran" "$sources_list"; then
+                printf "Up-to-date CRAN repo already found.\n"
+            else
+                printf "No CRAN repo found: appending to /etc/sources.list and updating\n"
+                echo "$distro_repo" | tee -a "$sources_list"
+            fi
         else
-            printf "No CRAN repo found: appending to /etc/sources.list and updating\n"
-            echo "$distro_repo" | tee -a "$sources_list"
+            printf "Not adding CRAN repo; using defaults.\n"
         fi
-    else
-        printf "Not adding CRAN repo; using defaults.\n"
-    fi
 
-fi
+esac
 
 
 # Prompt to install base R
@@ -96,7 +96,7 @@ read install_base_r
 
 if [ "$install_base_r" == "y" ]; then
     case "$distro" in
-        "debian"|"ubuntu" )
+        "debian"|"ubuntu"|"raspbian" )
             $pkg_update
             $pkg_install \
                 # Based on Dirk Eddelbuettel's docker container config
@@ -175,7 +175,7 @@ if [ "$install_tidyverse" == "y" ]; then
         fi
     fi
     case "$distro" in
-        "debian"|"ubuntu" )
+        "debian"|"ubuntu"|"raspbian" )
             $pkg_install \
                 libxml2-dev \
                 libcurl4-openssl-dev \
@@ -245,7 +245,7 @@ if [ "$install_rstudio" == "y" ]; then
             rm "$rstudio_file"
             ;;
         * )
-            printf "Sorry, your distro does not support RStudio.\n"
+            printf "Sorry, your distro does not officially support RStudio.\n"
 else
     printf "Skipping RStudio installation.\n"
 fi

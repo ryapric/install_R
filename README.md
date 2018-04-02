@@ -1,16 +1,15 @@
 Install R via Interactive Bash Script
 =====================================
 Ryan Price
-2018-03-31
 
 This repository provides a bash script, `install_R.bash`, that installs the R
 software on various popular GNU/Linux distributions: Debian, Ubuntu, Fedora,
-RHEL, CentOS, and Amazon Linux. Once run, the script becomes interactive,
-prompting the user for input on how they would like their installation
-configured. This program is designed to make the fresh R configuration of a new
-system or virtual machine as painless as possible. To that end, simply following
-the prompts should be all a user has to do to get up and running with R with a
-few keystrokes.
+RHEL, CentOS, Amazon Linux, and Raspbian. Once run, the script becomes
+interactive, prompting the user for input on how they would like their
+installation configured. This program is designed to make the fresh R
+configuration of a new system or virtual machine as painless as possible. To
+that end, simply following the prompts should be all a user has to do to get up
+and running with R with a few keystrokes.
 
 Currently, the script leads the user through the following main prompts:
 
@@ -61,13 +60,13 @@ when running this script.
 tried to keep as many "bashisms" out of it as possible, but some were
 unavoidable for more concise code.
 
-- Some machines, like `micro`-size Amazon AWS EC2 and Google Cloud instances, do
-not have enough RAM to compile the `tidyverse` source code successfully.
-Therefore, if you try and install the package suite, and your system memory is
-determined to be too low, you will be prompted to allocate space for a temporary
-swapfile so that compilation can succeed. The swapfile is "swapped off" after a
-successful install, but please note that whatever swap settings you may have had
-before *will not be restored*.
+- Some machines, like `micro`-size Amazon AWS EC2 and Google Cloud instances
+(and Raspberry Pis) do not have enough RAM to compile the `tidyverse` source
+code successfully. Therefore, if you try and install the package suite, and your
+system memory is determined to be too low, you will be prompted to allocate
+space for a temporary swapfile so that compilation can succeed. The swapfile is
+"swapped off" after a successful install, but please note that whatever swap
+settings you may have had before *will not be restored*.
     - If installation fails or is interrupted, the swapfile may not be removed.
     You can check and remove it yourself by inspecting the `/mnt` folder for a
     `*.swap` file (where `*` is the size you gave the swapfile, in GB). Then you
@@ -76,6 +75,12 @@ before *will not be restored*.
     swapoff /mnt/*.swap
     rm /mnt/*.swap
     ```
+
+- If you chose to make a swapfile, please note that for systems like the
+Raspberry Pi, which use SD cards as storage, this is not a great idea. SD cards
+have shorter life spans than magnetic persistent storage, and I do not know how
+thrashed they may be by so much C++ compilation at once. Proceed with caution
+when agreeing to that prompt on such a system.
 
 Please feel free to file bug reports, or reach out with any questions or
 suggestions.
