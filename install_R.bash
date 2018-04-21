@@ -220,7 +220,8 @@ if [ "$install_tidyverse" == "y" ]; then
                 postgresql
     esac
     Rscript -e "
-        install.packages(c('tidyverse', \
+        install.packages(c( \
+            'tidyverse', \
             'data.table', \
             'devtools', \
             'formatR', \
@@ -233,9 +234,11 @@ if [ "$install_tidyverse" == "y" ]; then
             'RMariaDB', \
             'RPostgreSQL'), \
             dependencies = TRUE, repos = 'https://cran.rstudio.com')"
-    if [ -n "$make_swap" ] && [ "$make_swap" == "y" ]; then
-        swapoff "$swapfile"
-        rm "$swapfile"
+    if [ -n "$make_swap" ]; then
+        if [ "$make_swap" == "y" ]; then
+            swapoff "$swapfile"
+            rm "$swapfile"
+        fi
     fi
 else
     printf "Skipping tidyverse installation.\n"
