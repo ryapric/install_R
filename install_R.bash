@@ -195,12 +195,13 @@ if [ "$install_tidyverse" == "y" ]; then
                 libpq-dev \
                 libssh2-1-dev \
                 unixodbc-dev
-        ;;
+                ;;
         "fedora"|"centos"|"rhel"|"amzn" )
             $pkg_install \
                 libcurl-devel \
                 openssl-devel \
                 libxml2-devel \
+                unixODBC \
                 mariadb-connector-c-devel \
                 mariadb-devel \
                 mysql-devel \
@@ -210,6 +211,13 @@ if [ "$install_tidyverse" == "y" ]; then
                 gcc-c++ \
                 automake \
                 autoconf
+                ;;
+        "manjaro"|"arch" )
+            $pkg_install \
+                gcc-fortran \
+                unixodbc \
+                mariadb \
+                postgresql
     esac
     Rscript -e "
         install.packages(c('tidyverse', \
@@ -219,6 +227,7 @@ if [ "$install_tidyverse" == "y" ]; then
             'remotes', \
             'selectr', \
             'caTools', \
+            'odbc', \
             'RSQLite', \
             'RMySQL', \
             'RMariaDB', \
