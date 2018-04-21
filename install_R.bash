@@ -27,6 +27,7 @@ fi
 cran_repo_toplevel="https://cran.rstudio.com/bin/linux"
 
 # Get distro name, keep only the actual name, and set to all lowercase
+# I'll be honest: I have no idea how the lowercasing works
 distro="$(cat /etc/*-release | grep '^ID=' | sed 's/ID=//g; s/\"//g')"
 distro="${distro,,}"
 
@@ -61,6 +62,10 @@ case "$distro" in
         pkg_update="yum check-update"
         pkg_install="yum install -y"
         # $pkg_update
+        ;;
+    "manjaro"|"arch" )
+        pkg_update="pacman -Syu --noconfirm"
+        pkg_install="pacman -Syu --noconfirm"
         ;;
     * )
         printf "Sorry, your GNU/Linux distribution ($distro) is not supported right now.\n"
@@ -118,6 +123,10 @@ if [ "$install_base_r" == "y" ]; then
         "centos"|"rhel"|"amzn" )
             $pkg_install \
                 R
+                ;;
+        "manjaro"|"arch" )
+            $pkg_install \
+                r
     esac
 else
     printf "Well then... why did you run this script?\n"
@@ -245,7 +254,8 @@ if [ "$install_rstudio" == "y" ]; then
             rm "$rstudio_file"
             ;;
         * )
-            printf "Sorry, your distro does not officially support RStudio.\n"
+            printf "Sorry, your distro does not *officially* support RStudio.\n"
+            printf "You can try looking into this yourself, though.\n"
 else
     printf "Skipping RStudio installation.\n"
 fi

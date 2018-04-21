@@ -3,13 +3,23 @@ Install R via Interactive Bash Script
 Ryan Price
 
 This repository provides a bash script, `install_R.bash`, that installs the R
-software on various popular GNU/Linux distributions: Debian, Ubuntu, Fedora,
-RHEL, CentOS, Amazon Linux, and Raspbian. Once run, the script becomes
-interactive, prompting the user for input on how they would like their
-installation configured. This program is designed to make the fresh R
-configuration of a new system or virtual machine as painless as possible. To
-that end, simply following the prompts should be all a user has to do to get up
-and running with R with a few keystrokes.
+software on various popular GNU/Linux distributions:
+
+- Debian
+- Ubuntu
+- Fedora
+- RHEL
+- CentOS
+- Amazon Linux
+- Arch Linux (once you're up & running)
+- Manjaro
+- Raspbian.
+
+Once run, the script becomes interactive, prompting the user for input on how
+they would like their installation configured. This program is designed to make
+the fresh R configuration of a new system or virtual machine as painless as
+possible. To that end, simply following the prompts should be all a user has to
+do to get up and running with R with a few keystrokes.
 
 Currently, the script leads the user through the following main prompts:
 
