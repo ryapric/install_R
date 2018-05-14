@@ -98,13 +98,11 @@ esac
 # Prompt to install base R
 printf "\nWould you like to install base R? (y/n) "
 read install_base_r
-
 if [ "$install_base_r" == "y" ]; then
     case "$distro" in
         "debian"|"ubuntu"|"raspbian" )
             $pkg_update
             $pkg_install \
-                # Based on Dirk Eddelbuettel's docker container config
                 ed \
                 less \
                 locales \
@@ -186,6 +184,7 @@ if [ "$install_tidyverse" == "y" ]; then
     case "$distro" in
         "debian"|"ubuntu"|"raspbian" )
             $pkg_install \
+                libssl-dev \
                 libxml2-dev \
                 libcurl4-openssl-dev \
                 libcairo2-dev \
