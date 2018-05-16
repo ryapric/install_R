@@ -21,6 +21,13 @@ if [ -z "$bash_installed" ]; then
 fi
 
 
+# Check for --no-confirm option
+if [ "$1" != "--no-confirm" ]; then
+    printf "You cannot pass any option to this script except '--no-confirm'. Aborting.\n"
+    exit 1
+fi
+
+
 # Distribution-specific settings ----
 
 # Need the repo assigned early so distro-specific assignments pass
