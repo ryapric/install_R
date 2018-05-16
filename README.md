@@ -61,6 +61,11 @@ script manually. Either approach will have the same results.
 Things to Note
 --------------
 
+- You can give approval to all prompts (except the swap file confirmation) by
+running the script and passing a single option: `--no-confirm`. This is useful
+for when you want a full ecosystem installation without having to wait through
+the install steps.
+
 - There are various GNU/Linux utilities that R, the tidyverse, and RStudio
 depend on to function properly (`libxml`, `libssl`, PostgreSQL backend, etc.).
 Those utilities will only be installed if the relevant selection is approved
