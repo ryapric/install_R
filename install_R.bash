@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Exit on any error, or undeclared variable
-set -eu
+# Exit on any error
+set -e
 
 
 # User must run with elevated privileges
@@ -17,6 +17,13 @@ if [ -z "$bash_installed" ]; then bash_installed="ls /usr/bin | grep '^bash$'"; 
 
 if [ -z "$bash_installed" ]; then
     printf "To be safe, this script must be run using bash, and not another shell. Aborting.\n" >&2
+    exit 1
+fi
+
+
+# Check for --no-confirm option
+if [ -n "$1" ] && [ "$1" != "--no-confirm" ]; then
+    printf "You cannot pass any option to this script except '--no-confirm'. Aborting.\n"
     exit 1
 fi
 
@@ -40,20 +47,19 @@ case "$distro" in
         $pkg_update
         $pkg_install apt-transport-https lsb-release
         if [ "$distro" == "debian" ]; then
-            distro_repo="deb $cran_repo_toplevel/$distro $(lsb_release -cs)-cran34/"
+            distro_repo="deb $cran_repo_toplevel/$distro $(lsb_release -cs)-cran35/"
             $pkg_install gnupg2
             apt-key adv --keyserver keys.gnupg.net --recv-key 'E19F5F87128899B192B1A2C2AD5F960A256A04AF'
         else
             distro_repo="deb $cran_repo_toplevel/$distro $(lsb_release -cs)/"
             apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 'E084DAB9'
         fi
-        $pkg_update
         ;;
     "fedora" )
         pkg_update="dnf check-update"
         pkg_install="dnf install -y"
         # Running RPM-based update returns exit code 100 if any updates available!
-        # $pkg_update
+        # So, don't do it
         ;;
     "centos"|"rhel"|"amzn" )
         # Add EPEL (EL7) repo list
@@ -61,7 +67,6 @@ case "$distro" in
         rpm -Uvh "http://download.fedoraproject.org/pub/epel/7/x86_64/Packages/e/epel-release-7-11.noarch.rpm"
         pkg_update="yum check-update"
         pkg_install="yum install -y"
-        # $pkg_update
         ;;
     "manjaro"|"arch" )
         pkg_update="pacman -Syu --noconfirm"
@@ -74,34 +79,39 @@ esac
 
 
 # Add appropriate CRAN repo to sources list, if applicable
+deb_repo_update () {
+    if grep --quiet "cran" "$sources_list"; then
+        printf "Up-to-date CRAN repo already found.\n"
+    else
+        printf "No CRAN repo found: appending to /etc/sources.list and updating\n"
+        echo "$distro_repo" | tee -a "$sources_list"
+        $pkg_update
+    fi
+}
+
 case "$distro" in
     "debian"|"ubuntu" )
-        printf "\nTo get the latest version of R, you must update your package repo.\n"
-        printf "Otherwise, you can only use whatever the latest R version is available for this distribution ($(lsb_release -ds)).\n"
-        printf "Would you like to add the official CRAN repo to your sources list? (y/n) "
-        read addrepo
-    
-        if [ "$addrepo" == "y" ]; then
-            if grep --quiet "cran" "$sources_list"; then
-                printf "Up-to-date CRAN repo already found.\n"
-            else
-                printf "No CRAN repo found: appending to /etc/sources.list and updating\n"
-                echo "$distro_repo" | tee -a "$sources_list"
-            fi
+        if [ "$1" == "--no-confirm" ]; then
+            deb_repo_update
         else
-            printf "Not adding CRAN repo; using defaults.\n"
+            printf "\nTo get the latest version of R, you must update your package repo.\n"
+            printf "Otherwise, you can only use whatever the latest R version is available for this distribution ($(lsb_release -ds)).\n"
+            printf "Would you like to add the official CRAN repo to your sources list? (y/n) "
+            read addrepo
+            
+            if [ "$addrepo" == "y" ]; then
+                deb_repo_update
+            else
+                printf "Not adding CRAN repo; using defaults.\n"
+            fi
         fi
-
 esac
 
 
 # Prompt to install base R
-printf "\nWould you like to install base R? (y/n) "
-read install_base_r
-if [ "$install_base_r" == "y" ]; then
+install_base_R () {
     case "$distro" in
         "debian"|"ubuntu"|"raspbian" )
-            $pkg_update
             $pkg_install \
                 ed \
                 less \
@@ -126,61 +136,39 @@ if [ "$install_base_r" == "y" ]; then
             $pkg_install \
                 r
     esac
-else
-    printf "Well then... why did you run this script?\n"
-    exit 0
-fi
+}
 
-if [ "$distro" == "ubuntu" ]; then
-    # Ask to add to staff group, so all packages install in the same location as for the root user
-    printf "\nWould you like to be added to the 'staff' group?\n"
-    printf "This allows for all R packages to be installed to the same location,\n"
-    printf "i.e. accessible to all users on this machine without needing to reinstall.\n"
-    printf "Add to staff group? (y/n) "
-    read addto_staff
-    
-    if [ "$addto_staff" = "y" ]; then
-        usermod -aG staff "$SUDO_USER"
-        printf "Done. You must log out, then back in for changes to take effect.\n"
+if [ "$1" == "--no-confirm" ]; then
+    install_base_R
+else
+    printf "\nWould you like to install base R? (y/n) "
+    read install_base_r
+    if [ "$install_base_r" == "y" ]; then
+        install_base_R
     else
-        printf "Not adding sudo user to staff group.\n"
+        printf "Well then... why did you run this script?\n"
+        exit 0
+    fi
+    
+    if [ "$distro" == "ubuntu" ]; then
+        # Ask to add to staff group, so all packages install in the same location as for the root user
+        printf "\nWould you like to be added to the 'staff' group?\n"
+        printf "This allows for all R packages to be installed to the same location,\n"
+        printf "i.e. accessible to all users on this machine without needing to reinstall.\n"
+        printf "Add to staff group? (y/n) "
+        read addto_staff
+        
+        if [ "$addto_staff" = "y" ]; then
+            usermod -aG staff "$SUDO_USER"
+            printf "Done. You must log out, then back in for changes to take effect.\n"
+        else
+            printf "Not adding sudo user to staff group.\n"
+        fi
     fi
 fi
 
 # Prompt to install the tidyverse
-printf "\nThe tidyverse of R packages is a suite of tools designed for, among other things, data analysis.\n"
-printf "Installing the tidyverse may take a long time, and a few hundred MB of disk space.\n"
-printf "Would you like to install the tidyverse of R packages? (y/n) "
-read install_tidyverse
-
-if [ "$install_tidyverse" == "y" ]; then
-    # Check if user needs more RAM for tidyverse source-package compilation (ex. AWS
-    # EC2 micro instances; 1G is too small for packages like readr/haven compilation)
-    # If yes, prompt to make a local swap file.
-    sysmem="$(cat /proc/meminfo | grep MemTotal | awk '{ print $2 }')"
-    sysmem="$((sysmem / 1000000))"
-    if [ "$sysmem" -le "1" ]; then
-        printf "\nWARNING: Available system memory (~$sysmem GB) is likely too low\n"
-        printf "to compile packages for the tidyverse (i.e., install them on your system).\n"
-        printf "Would you like to create a temporary swapfile (/swap2) to allow for successful compilation?\n"
-        printf "(please note that choosing 'y' will NOT restore any original swap partition after intstall, but WILL remove swapfile) (y/n) "
-        read make_swap
-        if [ "$make_swap" == "y" ]; then
-            printf "\n How large of a swapfile would you like?\n"
-            printf "Please enter as an integer, in GB (at least 1 recommended) : "
-            read swap_size
-            swapfile="/mnt/${swap_size}g.swap"
-            swapoff -a
-            fallocate -l ${swap_size}g "$swapfile"
-            chmod 600 "$swapfile"
-            mkswap "$swapfile"
-            swapon "$swapfile"
-        elif [ "$make_swap" == "n" ]; then
-            printf "Not risking crashing your system. Skipping tidyverse installation, and stopping here.\n"
-            printf "If you want to continue, re-run this script, and select 'no' when prompted for tidyverse installation.\n"
-            exit 0
-        fi
-    fi
+install_tidyverse () {
     case "$distro" in
         "debian"|"ubuntu"|"raspbian" )
             $pkg_install \
@@ -233,21 +221,59 @@ if [ "$install_tidyverse" == "y" ]; then
             'RMariaDB', \
             'RPostgreSQL'), \
             dependencies = TRUE, repos = 'https://cran.rstudio.com')"
-    if [ -n "$make_swap" ]; then
+}
+
+if [ "$1" == "--no-confirm" ]; then
+    install_tidyverse
+else
+    printf "\nThe tidyverse of R packages is a suite of tools designed for, among other things, data analysis.\n"
+    printf "Installing the tidyverse may take a long time, and a few hundred MB of disk space.\n"
+    printf "Would you like to install the tidyverse of R packages? (y/n) "
+    read install_tidyverse_q
+    
+    if [ "$install_tidyverse_q" == "y" ]; then
+        # Check if user needs more RAM for tidyverse source-package compilation (ex. AWS
+        # EC2 micro instances; 1G is too small for packages like readr/haven compilation)
+        # If yes, prompt to make a local swap file.
+        sysmem="$(cat /proc/meminfo | grep MemTotal | awk '{ print $2 }')"
+        sysmem="$((sysmem / 1000000))"
+        if [ "$sysmem" -le "1" ]; then
+            printf "\nWARNING: Available system memory (~$sysmem GB) is likely too low\n"
+            printf "to compile packages for the tidyverse (i.e., install them on your system).\n"
+            printf "Would you like to create a temporary swapfile (/swap2) to allow for successful compilation?\n"
+            printf "(please note that choosing 'y' will NOT restore any original swap partition after intstall, but WILL remove swapfile) (y/n) "
+            read make_swap
+            if [ "$make_swap" == "y" ]; then
+                printf "\n How large of a swapfile would you like?\n"
+                printf "Please enter as an integer, in GB (at least 1 recommended) : "
+                read swap_size
+                swapfile="/mnt/${swap_size}g.swap"
+                swapoff -a
+                fallocate -l ${swap_size}g "$swapfile"
+                chmod 600 "$swapfile"
+                mkswap "$swapfile"
+                swapon "$swapfile"
+            elif [ "$make_swap" == "n" ]; then
+                printf "Not risking crashing your system. Skipping tidyverse installation, and stopping here.\n"
+                printf "If you want to continue, re-run this script, and select 'no' when prompted for tidyverse installation.\n"
+                exit 0
+            fi
+        fi
+        
+        install_tidyverse
+        
         if [ "$make_swap" == "y" ]; then
             swapoff "$swapfile"
             rm "$swapfile"
         fi
+    else
+        printf "Skipping tidyverse installation.\n"
     fi
-else
-    printf "Skipping tidyverse installation.\n"
 fi
 
-# Prompt to install RStudio Desktop
-printf "\nWould you like to install RStudio Desktop, which is an IDE for R? (y/n) "
-read install_rstudio
 
-if [ "$install_rstudio" == "y" ]; then
+# Prompt to install RStudio Desktop
+install_rstudio () {
     rstudio_dl="https://download1.rstudio.org/rstudio-"
     case "$distro" in
         "debian"|"ubuntu" )
@@ -267,8 +293,20 @@ if [ "$install_rstudio" == "y" ]; then
         * )
             printf "Sorry, your distro does not *officially* support RStudio.\n"
             printf "You can try looking into this yourself, though.\n"
+    esac
+}
+
+if [ "$1" == "--no-confirm" ]; then
+    install_rstudio
 else
-    printf "Skipping RStudio installation.\n"
+    printf "\nWould you like to install RStudio Desktop, which is an IDE for R? (y/n) "
+    read install_rstudio_q
+    
+    if [ "$install_rstudio_q" == "y" ]; then
+        install_rstudio
+    else
+        printf "Skipping RStudio installation.\n"
+    fi
 fi
 
 printf "\nYou're all set! Enjoy R!\n"
