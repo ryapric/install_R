@@ -1,4 +1,4 @@
-FROM amazonlinux:latest
+FROM debian:latest
 
 COPY install_R.bash /root/
 

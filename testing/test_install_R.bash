@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-distro="amzn"
+distro="debian"
 
 docker build --no-cache -f ./testing/Dockerfile -t test_install_r_${distro} .
 

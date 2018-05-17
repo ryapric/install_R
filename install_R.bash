@@ -22,7 +22,7 @@ fi
 
 
 # Check for --no-confirm option
-if [ "$1" != "--no-confirm" ]; then
+if [ -n "$1" ] && [ "$1" != "--no-confirm" ]; then
     printf "You cannot pass any option to this script except '--no-confirm'. Aborting.\n"
     exit 1
 fi
@@ -54,13 +54,12 @@ case "$distro" in
             distro_repo="deb $cran_repo_toplevel/$distro $(lsb_release -cs)/"
             apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 'E084DAB9'
         fi
-        $pkg_update
         ;;
     "fedora" )
         pkg_update="dnf check-update"
         pkg_install="dnf install -y"
         # Running RPM-based update returns exit code 100 if any updates available!
-        # $pkg_update
+        # So, don't do it
         ;;
     "centos"|"rhel"|"amzn" )
         # Add EPEL (EL7) repo list
@@ -68,7 +67,6 @@ case "$distro" in
         rpm -Uvh "http://download.fedoraproject.org/pub/epel/7/x86_64/Packages/e/epel-release-7-11.noarch.rpm"
         pkg_update="yum check-update"
         pkg_install="yum install -y"
-        # $pkg_update
         ;;
     "manjaro"|"arch" )
         pkg_update="pacman -Syu --noconfirm"
@@ -87,6 +85,7 @@ deb_repo_update () {
     else
         printf "No CRAN repo found: appending to /etc/sources.list and updating\n"
         echo "$distro_repo" | tee -a "$sources_list"
+        $pkg_update
     fi
 }
 
@@ -113,7 +112,6 @@ esac
 install_base_R () {
     case "$distro" in
         "debian"|"ubuntu"|"raspbian" )
-            $pkg_update
             $pkg_install \
                 ed \
                 less \
