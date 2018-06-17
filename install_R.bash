@@ -223,8 +223,18 @@ install_tidyverse () {
             dependencies = TRUE, repos = 'https://cran.rstudio.com')"
 }
 
+# Check if user needs more RAM for tidyverse source-package compilation (ex. AWS
+# EC2 micro instances; 1G is too small for packages like readr/haven compilation)
+# If yes, prompt to make a local swap file.
+sysmem="$(cat /proc/meminfo | grep MemTotal | awk '{ print $2 }')"
+sysmem="$((sysmem / 1000000))"
+
 if [ "$1" == "--no-confirm" ]; then
-    install_tidyverse
+    if [ "$sysmem" -gt "1" ]; then
+        install_tidyverse
+    else
+        printf "Not enough RAM detected to install the tidyverse; skipping\n"
+    fi
 else
     printf "\nThe tidyverse of R packages is a suite of tools designed for, among other things, data analysis.\n"
     printf "Installing the tidyverse may take a long time, and a few hundred MB of disk space.\n"
@@ -232,11 +242,6 @@ else
     read install_tidyverse_q
     
     if [ "$install_tidyverse_q" == "y" ]; then
-        # Check if user needs more RAM for tidyverse source-package compilation (ex. AWS
-        # EC2 micro instances; 1G is too small for packages like readr/haven compilation)
-        # If yes, prompt to make a local swap file.
-        sysmem="$(cat /proc/meminfo | grep MemTotal | awk '{ print $2 }')"
-        sysmem="$((sysmem / 1000000))"
         if [ "$sysmem" -le "1" ]; then
             printf "\nWARNING: Available system memory (~$sysmem GB) is likely too low\n"
             printf "to compile packages for the tidyverse (i.e., install them on your system).\n"
