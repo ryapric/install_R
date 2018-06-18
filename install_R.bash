@@ -31,12 +31,18 @@ fi
 # Distribution-specific settings ----
 
 # Need the repo assigned early so distro-specific assignments pass
-cran_repo_toplevel="https://cran.rstudio.com/bin/linux"
+cran_repo_toplevel="https://cloud.r-project.org/bin/linux"
 
 # Get distro name, keep only the actual name, and set to all lowercase
 # I'll be honest: I have no idea how the lowercasing works
 distro="$(cat /etc/*-release | grep '^ID=' | sed 's/ID=//g; s/\"//g')"
 distro="${distro,,}"
+
+# Get architecture (mostly for Debian src check
+architecture="$(uname -m)"
+if echo $architecture | grep -q "arm"; then
+    architecture="arm"
+fi
 
 # Big Ol' Case Block
 case "$distro" in
@@ -47,7 +53,11 @@ case "$distro" in
         $pkg_update
         $pkg_install apt-transport-https lsb-release
         if [ "$distro" == "debian" ]; then
-            distro_repo="deb $cran_repo_toplevel/$distro $(lsb_release -cs)-cran35/"
+            if [ "$architecture" == "arm" ]; then
+                distro_repo="deb-src $cran_repo_toplevel/$distro $(lsb_release -cs)-cran34/"
+            else
+                distro_repo="deb $cran_repo_toplevel/$distro $(lsb_release -cs)-cran35/"
+            fi
             $pkg_install gnupg2
             apt-key adv --keyserver keys.gnupg.net --recv-key 'E19F5F87128899B192B1A2C2AD5F960A256A04AF'
         else
@@ -119,7 +129,6 @@ install_base_R () {
                 wget \
                 ca-certificates \
                 littler \
-                r-cran-littler \
                 r-base \
                 r-base-dev \
                 r-recommended
