@@ -51,17 +51,22 @@ case "$distro" in
         pkg_install="apt-get install -y"
         sources_list="/etc/apt/sources.list"
         $pkg_update
-        $pkg_install apt-transport-https lsb-release
+        $pkg_install apt-transport-https lsb-release gnupg2
         if [ "$distro" == "debian" ]; then
             if [ "$architecture" == "arm" ]; then
                 distro_repo="deb-src $cran_repo_toplevel/$distro $(lsb_release -cs)-cran34/"
             else
                 distro_repo="deb $cran_repo_toplevel/$distro $(lsb_release -cs)-cran35/"
             fi
-            $pkg_install gnupg2
-            apt-key adv --keyserver keys.gnupg.net --recv-key 'E19F5F87128899B192B1A2C2AD5F960A256A04AF'
+            for key in 'E19F5F87128899B192B1A2C2AD5F960A256A04AF'; do
+                apt-key adv --keyserver keys.gnupg.net --recv-key $key ||
+                apt-key adv --keyserver keys.gnupg.net --recv-key $key ||
+                apt-key adv --keyserver keys.gnupg.net --recv-key $key ||
+                apt-key adv --keyserver keys.gnupg.net --recv-key $key ||
+                apt-key adv --keyserver keys.gnupg.net --recv-key $key
+            done
         else
-            distro_repo="deb $cran_repo_toplevel/$distro $(lsb_release -cs)/"
+            distro_repo="deb $cran_repo_toplevel/$distro $(lsb_release -cs)-cran35/"
             apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 'E084DAB9'
         fi
         ;;
@@ -151,8 +156,8 @@ if [ "$1" == "--no-confirm" ]; then
     install_base_R
 else
     printf "\nWould you like to install base R? (y/n) "
-    read install_base_r
-    if [ "$install_base_r" == "y" ]; then
+    read install_base_R_q
+    if [ "$install_base_R_q" == "y" ]; then
         install_base_R
     else
         printf "Well then... why did you run this script?\n"
